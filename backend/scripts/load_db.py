@@ -6,13 +6,11 @@ from app.models import Job
 from normalize import load_and_normalize
 from dedupe import deduplicate
 
-def load_jobs_to_db(jobs: list):
-    # Create tables if they don't exist yet
+def load_jobs_to_db(jobs):
     Base.metadata.create_all(bind=engine)
 
     session = SessionLocal()
     try:
-        # Clear existing data for a clean reload (safe for dev)
         session.query(Job).delete()
 
         inserted = 0
@@ -34,7 +32,6 @@ def load_jobs_to_db(jobs: list):
             session.add(db_job)
             inserted += 1
 
-            # Commit in batches of 500 to avoid memory/timeout issues
             if inserted % 500 == 0:
                 session.commit()
                 print(f"  Inserted {inserted}/{len(jobs)}...")

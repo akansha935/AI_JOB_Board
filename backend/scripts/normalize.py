@@ -1,5 +1,4 @@
 import json
-import re
 
 SOURCE_KEYWORDS = {
     "linkedin": "LinkedIn",
@@ -9,7 +8,6 @@ SOURCE_KEYWORDS = {
 }
 
 def extract_source(via_field: str) -> str:
-    """Map the messy 'via' field to a clean source platform name."""
     if not via_field:
         return "Other"
     via_lower = via_field.lower()
@@ -25,12 +23,10 @@ def safe_int(value):
         return None
 
 def extract_apply_url(apply_options_raw: str):
-    """apply_options is a double-escaped JSON string — parse it safely."""
     try:
-        # Handle double-encoded JSON strings
         cleaned = apply_options_raw
         if cleaned.startswith('"') and cleaned.endswith('"'):
-            cleaned = json.loads(cleaned)  # unescape outer layer
+            cleaned = json.loads(cleaned)
         parsed = json.loads(cleaned)
         if isinstance(parsed, list) and len(parsed) > 0:
             return parsed[0].get("link")
@@ -39,7 +35,6 @@ def extract_apply_url(apply_options_raw: str):
     return None
 
 def normalize_job(raw: dict) -> dict:
-    """Convert one raw job entry into our clean schema."""
     return {
         "id": raw.get("job_id"),
         "title": (raw.get("title") or "").strip(),
@@ -73,7 +68,6 @@ def load_and_normalize(filepath: str) -> list:
 
 if __name__ == "__main__":
     jobs = load_and_normalize("../../data/raw_jobs.json")
-    print(f"Sample source distribution:")
     from collections import Counter
     sources = Counter(j["source"] for j in jobs)
     for src, count in sources.most_common():

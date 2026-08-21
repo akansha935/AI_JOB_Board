@@ -1,19 +1,15 @@
 import sys
 sys.path.append("..")
 
+import json
 from rapidfuzz import fuzz
 from collections import defaultdict
 from normalize import load_and_normalize
 
-def normalize_text(s: str) -> str:
+def normalize_text(s):
     return (s or "").strip().lower()
 
-def deduplicate(jobs: list, title_threshold=88) -> list:
-    """
-    Groups jobs by (normalized company), then fuzzy-matches titles within
-    each company group to catch near-duplicate postings across sources.
-    Keeps the first-seen record, merges 'sources' seen for that job.
-    """
+def deduplicate(jobs, title_threshold=88):
     by_company = defaultdict(list)
     for job in jobs:
         key = normalize_text(job["company"])
@@ -23,7 +19,7 @@ def deduplicate(jobs: list, title_threshold=88) -> list:
     duplicates_removed = 0
 
     for company, company_jobs in by_company.items():
-        kept = []  # list of (job, sources_set)
+        kept = []
         for job in company_jobs:
             title_norm = normalize_text(job["title"])
             matched = False
@@ -42,10 +38,12 @@ def deduplicate(jobs: list, title_threshold=88) -> list:
             job["all_sources"] = sorted(sources_set)
             final_jobs.append(job)
 
-    print(f"Deduplication: {len(jobs)} -> {len(final_jobs)} jobs "
-          f"({duplicates_removed} duplicates merged)")
+    print(f"Deduplication: {len(jobs)} -> {len(final_jobs)} jobs ({duplicates_removed} duplicates merged)")
     return final_jobs
 
 if __name__ == "__main__":
     jobs = load_and_normalize("../../data/raw_jobs.json")
     deduped = deduplicate(jobs)
+    with open("../../data/normalized_jobs.json", "w", encoding="utf-8") as f:
+        json.dump(deduped, f, ensure_ascii=False, indent=2)
+    print(f"Saved {len(deduped)} jobs to normalized_jobs.json")
